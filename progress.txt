@@ -1,0 +1,102 @@
+# BizSimAI Backend Progress Tracker
+
+## 2026-05-06 — Phase 5 Implementation Complete
+
+### What was built:
+
+#### 1. Authentication (JWT)
+- **Files:** `auth.py`, `routers/auth.py`
+- **Features:**
+  - JWT token creation/verification (HS256, no external deps)
+  - Professor login (password: `professor` / `bizsimai2026`)
+  - Student registration (student_id + name + password)
+  - Apple/Google ID token exchange (placeholder for prod)
+  - Role-based access control: `verify_professor()`, `verify_student_or_professor()`
+  - 24-hour token expiry
+- **Endpoints:** `/api/auth/login`, `/api/auth/register`, `/api/auth/verify`, `/api/auth/professor-only`, `/api/auth/student-or-professor`
+
+#### 2. Real-Time WebSocket Updates
+- **Files:** `ws_manager.py`, `routers/websocket.py`
+- **Features:**
+  - Per-session WebSocket connection groups
+  - JWT-authenticated WebSocket connections
+  - Auto-broadcast on session start and round completion
+  - Ping/pong keepalive
+  - Status request/response
+- **Endpoint:** `ws://host/ws/{sessionCode}?token={jwt}`
+- **Message types:** connected, session_started, round_complete, status, ping/pong, error
+
+#### 3. Test Coverage
+- **Files:** `test_phase5.py` (13 tests)
+- **All tests passing:** 31/31 (18 original + 13 new)
+
+### Files Added:
+- `backend/auth.py` — JWT auth core
+- `backend/routers/auth.py` — Auth endpoints
+- `backend/routers/websocket.py` — WebSocket endpoint
+- `backend/ws_manager.py` — WebSocket connection manager
+- `backend/test_phase5.py` — Phase 5 tests
+
+### Files Modified:
+- `backend/main.py` — Registered auth and websocket routers
+- `backend/routers/sessions.py` — Added WebSocket broadcast on session start
+- `backend/routers/decisions.py` — Added WebSocket broadcast on round completion
+- `IMPLEMENTATION_PLAN.md` — Updated Phase 5 status
+
+### Remaining Phase 5 Items:
+- [ ] Professor Web Dashboard (HTML/JS UI for session management + grade export)
+- [ ] iOS `NetworkService.swift` update for Apple/Google ID token exchange
+- [ ] iOS `SyncService.swift` update for WebSocket reconnection
+- [ ] Grade CSV Export endpoint (✅ DONE — backend complete, needs iOS UI trigger)
+- [ ] Production JWT secret configuration (✅ DONE — env vars + health check)
+- [ ] Apple/Google ID token verification (✅ DONE — JWKS integration)
+- [ ] iOS compilation fix (✅ DONE — RoundResultsViewModel mapping)
+- [ ] iOS build verification (✅ DONE — BUILD SUCCEEDED on iPhone 17 Pro simulator)
+
+## 2026-05-07 — Phase 5 Production Config + JWKS + iOS Build Fix
+
+### What was built:
+
+#### 1. Production JWT Configuration (✅ US-005)
+- `auth.py`: JWT_SECRET now from env var `BIZSIMAI_JWT_SECRET`
+- `auth.py`: JWT_EXPIRY_HOURS now from env var `BIZSIMAI_JWT_EXPIRY_HOURS`
+- `auth.py`: Professor credentials from env vars `BIZSIMAI_PROFESSOR_USERNAME`/`BIZSIMAI_PROFESSOR_PASSWORD`
+- `main.py`: Health endpoint returns production config info
+- Health check validates JWT secret is configured
+
+#### 2. Apple/Google ID Token Verification (✅ US-006)
+- Created `auth_providers.py`: Full JWKS-based verification for both providers
+- Apple: Verifies issuer (https://appleid.apple.com), audience (app bundle ID), token expiry
+- Google: Verifies issuer (accounts.google.com + accounts.gserviceaccount.com), audience
+- JWKS key cache with 6-hour TTL for both providers
+- `routers/auth.py`: Updated login to use real provider verification (not placeholder)
+- `auth.py`: Login endpoint uses `verify_apple_id_token` / `verify_google_id_token`
+
+#### 3. iOS Build Fix (✅)
+- Fixed `RoundResultsViewModel.swift` `convertToLocalRoundResult`:
+  - Mapped flat `RoundResultBackend` fields to detailed `RoundResult` model
+  - Fixed `InvestorScorecard` init call (was missing required params)
+  - Fixed `CreditRating` conversion (Double → String rawValue)
+  - Fixed `inventory` type conversion (Double → Int)
+  - Fixed `creditScore` rawValue conversion to enum
+- iOS **BUILD SUCCEEDED** on iPhone 17 Pro simulator (exit code 0)
+
+#### 4. Test Suite
+- All 31 tests passing (18 original + 13 Phase 5)
+- Updated `test_websocket_student_login_provider` to use proper JWT structure
+
+#### 5. Skills Created
+- `bizsimai-phase5` skill saved at ~/.hermes/skills/bizsimai-phase5/SKILL.md
+
+### Files Changed:
+- `backend/auth.py` — Production config + real token verification
+- `backend/auth_providers.py` — NEW: Apple/Google JWKS verification
+- `backend/routers/auth.py` — Updated login endpoint
+- `backend/main.py` — Health endpoint config output
+- `bizsimai/BizSimAI/ViewModels/RoundResultsViewModel.swift` — Fixed mapping
+- `bizsimai/IMPLEMENTATION_PLAN.md` — Updated status
+- `bizsimai/progress.txt` — Updated remaining items
+- `backend/prd.json` — Marked US-005, US-006 as done
+
+### Git Commits:
+- Backend: `79cfd04` — Phase 5: Production JWT config, Apple/Google JWKS
